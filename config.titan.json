@@ -1,0 +1,15 @@
+{
+    "lambda": {
+      "functionName": "bedrock-chat-lambda",
+      "roleName": "bedrock-chat-lambda-role"
+    },
+    "s3": {
+      "bucketName": "bedrock-chat-mulargui"
+    },
+    "bedrock": {
+      "model": "amazon.titan-text-lite-v1",
+      "maxTokens": 200,
+      "temperature": 0.7
+    }
+}
+  
