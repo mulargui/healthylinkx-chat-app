@@ -141,15 +141,17 @@ exports.handler = async (event) => {
     const max_tokens = body.max_tokens || config.bedrock.maxTokens || 300;
     const temperature = body.temperature || config.bedrock.temperature || 1.0;
     const modelId = config.bedrock.model;
+    const debug = config.lambda.debug || false;
 
     // we need to call Bedrock several times if we use tools
     let answer; //defined here as we need it for the loop condition and used later
     do{
       // Verify all messages are properly formatted (used for debugging)
-      messages.forEach((msg, index) => {
-        if (typeof msg.content !== 'string')
-          console.error(`Message at index ${index} has non-string content:`, msg);
-      });
+      if (debug)
+        messages.forEach((msg, index) => {
+          if (typeof msg.content !== 'string')
+            console.error(`Message at index ${index} has non-string content:`, msg);
+        });
 
       // Prepare the request for Bedrock
       console.log("Initializing Bedrock client");
@@ -178,13 +180,22 @@ exports.handler = async (event) => {
         messages.push({ role: "user", content: JSON.stringify([{
           type: "tool_result",
           tool_use_id: answer.content.id,
-          //content: `Search Results:\n${JSON.stringify(result.Doctors)}`
           content: result.Doctors
          }])});
 
         console.log("Added to conversation history:", JSON.stringify(messages.at(-1)));
       }
     } while (answer.case !== "end");
+
+    // we remove the <thinking> </thinking> of the response as this is internal and should
+    // not be propagated
+    if (!debug){
+      const content = answer.content.replace(/<thinking>(.*?)<\/thinking>/sg, '');
+      // sometimes the LLM just replies with thinking and the result is empty
+      // in this case we don't filter thinking
+      if (content)
+        answer.content = content;
+    }
 
     return {
       statusCode: 200,

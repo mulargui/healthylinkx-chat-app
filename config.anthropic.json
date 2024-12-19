@@ -1,7 +1,8 @@
 {
     "lambda": {
       "functionName": "bedrock-chat-lambda",
-      "roleName": "bedrock-chat-lambda-role"
+      "roleName": "bedrock-chat-lambda-role",
+      "debug": true
     },
     "s3": {
       "bucketName": "bedrock-chat-mulargui"
