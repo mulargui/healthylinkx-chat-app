@@ -12,5 +12,9 @@
     "anthropic_version" : "bedrock-2023-05-31",
     "maxTokens": 1000,
     "temperature": 0.7
+  },
+  "datastore": {
+    "user":"root",
+    "passwd": "awsdatastore"
   }
 }

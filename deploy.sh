@@ -1,10 +1,19 @@
 set -x
 
-#copy the config.json file to the different components
+#propagate the config.json file to the different components
 cp $(pwd)/config.json $(pwd)/lambda
 cp $(pwd)/config.json $(pwd)/lambda/src 
 cp $(pwd)/config.json $(pwd)/ux
+cp $(pwd)/config.json $(pwd)/datastore
 
+#build and deploy the datastore
+docker run --rm -w /src -v $(pwd)/datastore:/src node:22 \
+	npm install @aws-sdk/client-rds @aws-sdk/client-ec2 unzip graceful-fs await-exec
+docker run --rm -w /src -v $(pwd)/datastore:/src \
+	-e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_ACCOUNT_ID \
+	-e AWS_REGION -e AWS_DEFAULT_REGION -e AWS_SESSION_TOKEN \
+    node:22 node infra/DSCreate.js
+exit
 #build and deploy the lambda
 docker run --rm -w /src -v $(pwd)/lambda:/src node:22 \
 	npm install @aws-sdk/client-lambda @aws-sdk/client-iam adm-zip
