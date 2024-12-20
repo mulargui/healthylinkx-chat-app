@@ -18,7 +18,7 @@ docker run --rm -w /src -v $(pwd)/datastore:/src \
 docker run --rm -w /src -v $(pwd)/lambda:/src node:22 \
 	npm install @aws-sdk/client-lambda @aws-sdk/client-iam adm-zip
 docker run --rm -w /src -v $(pwd)/lambda/src:/src node:22 \
-	npm install @aws-sdk/client-bedrock-runtime
+	npm install @aws-sdk/client-bedrock-runtime @aws-sdk/client-rds mysql2
 docker run --rm -w /src -v $(pwd)/lambda:/src \
 	-e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_ACCOUNT_ID \
 	-e AWS_REGION -e AWS_DEFAULT_REGION -e AWS_SESSION_TOKEN \

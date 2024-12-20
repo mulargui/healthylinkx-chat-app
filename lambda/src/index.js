@@ -95,7 +95,7 @@ function parseModelResponse(modelId, responseBody) {
 //
 // helper function to invoke the tool
 //
-function invokeTool(tool){
+async function invokeTool(tool){
   console.log("Tool usage:", JSON.stringify(tool));
 
   // at this time only support SearchDoctors
@@ -109,7 +109,7 @@ function invokeTool(tool){
     speciality: ${tool.input.specialty}, 
     zipcode: ${tool.input.zipcode}`);
 
-  const result = SearchDoctors(tool.input.gender, 
+  const result = await SearchDoctors(tool.input.gender, 
     tool.input.lastname, 
     tool.input.specialty, 
     tool.input.zipcode);
@@ -173,7 +173,7 @@ exports.handler = async (event) => {
 
       //we need to call an external tool
       if (answer.case === "tool"){
-        const result = invokeTool(answer.content);
+        const result = await invokeTool(answer.content);
         console.log("Tool result:", JSON.stringify(result));
 
         //add the result to the conversation history

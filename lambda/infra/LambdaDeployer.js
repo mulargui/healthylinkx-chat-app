@@ -99,6 +99,11 @@ class LambdaDeployer {
       RoleName: roleName,
       PolicyArn: "arn:aws:iam::aws:policy/AmazonBedrockFullAccess"
     }));
+
+    await iam.send(new AttachRolePolicyCommand({
+      RoleName: roleName,
+      PolicyArn: "arn:aws:iam::aws:policy/AmazonRDSFullAccess"
+    }));
   }
 
   /**

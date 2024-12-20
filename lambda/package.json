@@ -1,13 +1,13 @@
 {
   "dependencies": {
-    "@aws-sdk/client-iam": "^3.714.0",
-    "@aws-sdk/client-lambda": "^3.714.0",
+    "@aws-sdk/client-iam": "^3.716.0",
     "adm-zip": "^0.5.16"
   },
   "scripts": {
     "test": "jest"
   },
   "devDependencies": {
+    "@aws-sdk/client-lambda": "^3.716.0",
     "axios": "^1.7.9",
     "jest": "^29.7.0"
   }
