@@ -1,19 +1,14 @@
 {
   "dependencies": {
     "@aws-sdk/client-ec2": "^3.716.0",
-    "@aws-sdk/client-iam": "^3.714.0",
     "@aws-sdk/client-rds": "^3.716.0",
-    "await-exec": "^0.1.2",
-    "graceful-fs": "^4.2.11",
-    "unzip": "^0.1.11"
+    "adm-zip": "^0.5.16",
+    "mysql2": "^3.11.5"
   },
   "scripts": {
     "test": "jest"
   },
   "devDependencies": {
     "jest": "^29.7.0"
-  },
-  "overrides": {
-    "graceful-fs": "$graceful-fs"
   }
 }

@@ -8,7 +8,7 @@ cp $(pwd)/config.json $(pwd)/datastore
 
 #build and deploy the datastore
 docker run --rm -w /src -v $(pwd)/datastore:/src node:22 \
-	npm install @aws-sdk/client-rds @aws-sdk/client-ec2 unzip graceful-fs await-exec
+	npm install @aws-sdk/client-rds @aws-sdk/client-ec2 adm-zip mysql2
 docker run --rm -w /src -v $(pwd)/datastore:/src \
 	-e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_ACCOUNT_ID \
 	-e AWS_REGION -e AWS_DEFAULT_REGION -e AWS_SESSION_TOKEN \

@@ -9,11 +9,10 @@ const {
 	CreateSecurityGroupCommand,
 	AuthorizeSecurityGroupIngressCommand
 } = require("@aws-sdk/client-ec2");
-const unzip = require('unzip');
-const fs = require('graceful-fs');
-const exec = require('await-exec');
+const AdmZip = require('adm-zip');
+const fs = require('fs');
 const path = require('path');
-const { exit } = require("process");
+const mysql = require('mysql2/promise');
 
 // Read the config file
 const configPath = path.join(__dirname, '..', 'config.json');
@@ -30,6 +29,117 @@ function sleep(secs) {
 }
 
 // ====== create MySQL database and add data =====
+async function LoadData() {
+	try{			
+		// Create an RDS client service object
+		const rdsclient = new RDSClient({});
+		
+		//URL of the instance
+		data = await rdsclient.send(new DescribeDBInstancesCommand({
+			DBInstanceIdentifier: 'healthylinkx-db'}));
+		const endpoint = data.DBInstances[0].Endpoint.Address;
+
+		// unzip the file to dump on the database
+		const zip = new AdmZip('./data/healthylinkxdump.sql.zip');
+		zip.extractAllTo('./data/', true);
+
+        // Read the dump file
+        //const dumpfile = await fs.readFile('./data/healthylinkxdump.sql', 'utf8');
+        const dumpfile = fs.readFileSync('./data/healthylinkxdump.sql', {
+            encoding: 'utf8'
+        });
+
+        // Create connection
+        const connection = await mysql.createConnection({
+            host: endpoint,
+            user: DBUSER,
+            password: DBPWD,
+            database: "healthylinkx",
+            multipleStatements: true // Important for executing multiple SQL statements
+		});
+		
+        // Split the dump file into separate statements and execute them
+		const statements = dumpfile
+		.split(/;\s*[\r\n]+/)
+		.map(statement => {
+			// Get only non-empty lines that aren't pure comments
+			const lines = statement
+				.split('\n')
+				.map(line => line.trim())
+				.filter(line => line && !line.match(/^(--)|(\/\*)/));
+				
+			// Join the remaining lines back together
+			return lines.join('\n');
+		})
+		.filter(statement => statement.length > 0);  // Remove empty statements
+		/*
+		const statements = dumpfile
+			.split(/;\s*[\r\n]+/)
+            .map(statement => statement.trim())
+			.filter(statement => {
+				// Remove empty statements
+				if (statement.length === 0) return false;
+
+				// Split into lines and check if there's at least one non-comment line
+				const lines = statement.split('\n')
+					.map(line => line.trim())
+					.filter(line => 
+						line.length > 0 && 
+						!line.startsWith('--') && 
+						!line.startsWith('/*') &&
+						line !== ''
+					);
+				
+				return lines.length > 0;
+            });*/
+		/*	
+		let i=0;
+		for (const statement of statements) {	
+			console.log('Completed executing statement: ', i);
+			console.log('Statement size: ', statement.length);
+			console.log('First 100 characters: ', statement.substring(0, 100));
+			i++;
+		}*/
+		
+		let i=0;
+        for (const statement of statements) {
+			try {
+				if (statement) {
+					await connection.query({
+						sql: statement + ';',
+						timeout: 90000 // 90 seconds timeout per query
+					});
+					//await connection.query(statement + ';');
+					console.log('Completed executing statement: ', i);
+					console.log('Statement size: ', statement.length);
+					console.log('First 50 characters: ', statement.substring(0, 50));
+					i++;
+				}
+			} catch (queryError) {
+				console.log('Error executing statement: ', i);
+				console.log('Statement size: ', statement.length);
+				console.log('First 50 characters: ', statement.substring(0, 50));
+				//throw queryError;
+				i++;
+				continue;
+			}
+        }
+		console.log('Total statements executed: ', i);
+		
+        // Close the connection
+        await connection.end();
+
+		//cleanup. delete the unzipped file
+		await fs.unlinkSync('./data/healthylinkxdump.sql');
+
+		console.log("Success. healthylinkx-db populated with data.");
+	} catch (err) {
+		console.log("Error loading datastore: ", err);
+		//if (err.message) console.log("Error message:", err.message);
+        //if (err.sql) console.log("Failed SQL:", err.sql);
+	}
+}
+
 async function DSCreate() {
 
 	try {
@@ -73,11 +183,6 @@ async function DSCreate() {
 		await rdsclient.send(new CreateDBInstanceCommand(rdsparams));
 		console.log("Success. healthylinkx-db requested.");
 
-		//unzip the file to dump on the database
-		// we do this here to use the wait time to unzip
-		await fs.createReadStream('./data/healthylinkxdump.sql.zip')
-			.pipe(unzip.Extract({ path: './data' }));
-
 		//wait till the instance is created
 		while(true) {
 			data = await rdsclient.send(new DescribeDBInstancesCommand({DBInstanceIdentifier: 'healthylinkx-db'}));
@@ -86,23 +191,14 @@ async function DSCreate() {
 			await sleep(30);
 		}
 		console.log("Success. healthylinkx-db provisioned.");
-	
-		//URL of the instance
-		data = await rdsclient.send(new DescribeDBInstancesCommand({DBInstanceIdentifier: 'healthylinkx-db'}));
-		const endpoint = data.DBInstances[0].Endpoint.Address;
-		console.log("DB endpoint: " + endpoint);
-
-		//load the data (and schema) into the database
-		// I really don't like this solution but all others I tried didn't work well => compromising!
-		//await exec(`mysql -u${DBUSER} -p${DBPWD} -h${endpoint} healthylinkx < ${'./data/healthylinkxdump.sql'}`); 
-		console.log("Success. healthylinkx-db populated with data.");
-				
-		//cleanup. delete the unzipped file
-		await fs.unlinkSync('./data/healthylinkxdump.sql');
 	} catch (err) {
 		console.log("Error creating datastore: ", err);
 	}
 }
 
-DSCreate();
+async function main () {
+	// await DSCreate();
+	await LoadData();
+}
 
+main();
