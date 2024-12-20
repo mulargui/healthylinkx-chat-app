@@ -6,14 +6,16 @@ This is an early prototype that combines open data of doctors and specialists fr
 
 Healthylinx is a classic three tiers app: front-end (ux), service API and data store. This architecture makes it very adequate to test different technologies and I use it for getting my hands dirty on new stuff.
 
-This repo implements Healthylinkx using an LLM as the front end. For each tier of the app, we use different AWS resources: RDS for the datastore, Lambda for the API and web app connected to Bedrock for the front-end.
+This repo implements Healthylinkx using an LLM as the front end ala ChatGPT. You can have general conversations with the LLM (we tested with Claude 3 Haiku) and search for doctors using the Healthylinkx directory. When looking for a doctor the conversation will include data from the HealthyLinkx directory seamlessly.
+
+For each tier of the app, we use different AWS resources: RDS for the datastore, Lambda for the API and web app connected to Bedrock for the front-end.
 
 To know more about the datastore this repo has more details https://github.com/mulargui/healthylinkx-mysql.git
 Likewise about the API using Lambda https://github.com/mulargui/healthylinkx-serverless.git
 
 This repo is based and adapted from previous work to build a LLM chat app  https://github.com/mulargui/bedrock-chat-app.git
 
-In this repo we added the HealthyLinkx datastore and extended the lambda to search in the HealthyLinkx datastore. Most of the code added for this purpose is from https://github.com/mulargui/healthylinkx-chatgpt-plugin
+In this repo we added the HealthyLinkx datastore and extended the API to search in the HealthyLinkx datastore. Most of the code added for this purpose is from https://github.com/mulargui/healthylinkx-chatgpt-plugin
 
 The interesting code is at /lambda/src/index.js where we added code to invoke external tools and at /lambda/src/healthylinkx.js where we implemented to call to the healthyLinkx datastore. This code can easily be extended to include more external tools (ie web search...) or more Healthylinkx tools (ie doctor booking...)
 
