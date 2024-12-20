@@ -20,7 +20,8 @@ const systemPrompt = `You are an AI assistant with extended skills in healthcare
     When the user asks for a doctor you have access to a tool to search for doctors, but only use it when neccesary. 
     If the tool is not required respond as normal.
     Before calling SearchDoctors, check if the user looks for a specific gender, lastname, speciality or zipcode.
-    Do it in a conversational mode.
+    At a minimum the user should provide the lastname or speciality. 
+    Genre and zipcode are optional for a more refined search.
     Before calling a tool, do some analysis within <thinking> </thinking> tags. 
     Go through each of the parameters and determine if the user has directly provided or given enough information to infer a value. 
     If all the parameters are present, close the thinking tag and proceed with the tool call.
@@ -47,6 +48,7 @@ const tool_definition = {
             },
             gender: {
                 type: "string",
+                enum: ["male", "female"],
                 description: "The gender of the doctor."
             }
         }
@@ -73,28 +75,6 @@ async function SearchDoctors(	gender, lastname, specialty, zipcode){
 		if (gender !== 'M') gender = 'F';
 	}
 
-    // for now just a canned answer
-    /*
-    return ServerReply (200, [{
-            Doctor_Full_Name: "ANDERSON, VIRGINIA  MHC",
-            Doctor_Full_Street: "16700 NE 79TH ST SUITE 103",
-            Doctor_Full_City: "REDMOND, WA 980524465",
-            Doctor_Specialization: "Nurse"
-        },
-        {
-            Doctor_Full_Name: "ANDERSON, JOHN",
-            Doctor_Full_Street: "16700 NE 79TH ST SUITE 104",
-            Doctor_Full_City: "REDMOND, WA 980524465",
-            Doctor_Specialization: "Acupunture"
-        },
-        {
-            Doctor_Full_Name: "ANDERSON, ANDREW",
-            Doctor_Full_Street: "16700 NE 79TH ST SUITE 105",
-            Doctor_Full_City: "REDMOND, WA 980524465",
-            Doctor_Specialization: "Phisio Therapy"
-        }
-    ]);*/
-
     // build the query to the datastore
 	var query = "SELECT Provider_Full_Name,Provider_Full_Street,Provider_Full_City,Classification FROM npidata2 WHERE (";
     if(lastname)
@@ -111,7 +91,7 @@ async function SearchDoctors(	gender, lastname, specialty, zipcode){
         if(lastname || gender || specialty) query += " AND ";
         query += "(Provider_Short_Postal_Code = '" + zipcode + "')";
     }
-    query += ") limit 10";
+    query += ") limit 25";
     
     //URL of the datastore
     const rdsclient = new RDSClient({});
