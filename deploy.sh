@@ -13,7 +13,7 @@ docker run --rm -w /src -v $(pwd)/datastore:/src \
 	-e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_ACCOUNT_ID \
 	-e AWS_REGION -e AWS_DEFAULT_REGION -e AWS_SESSION_TOKEN \
     node:22 node infra/DSCreate.js
-exit
+
 #build and deploy the lambda
 docker run --rm -w /src -v $(pwd)/lambda:/src node:22 \
 	npm install @aws-sdk/client-lambda @aws-sdk/client-iam adm-zip

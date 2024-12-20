@@ -58,75 +58,17 @@ async function LoadData() {
             multipleStatements: true // Important for executing multiple SQL statements
 		});
 		
-        // Split the dump file into separate statements and execute them
-		const statements = dumpfile
-		.split(/;\s*[\r\n]+/)
-		.map(statement => {
-			// Get only non-empty lines that aren't pure comments
-			const lines = statement
-				.split('\n')
-				.map(line => line.trim())
-				.filter(line => line && !line.match(/^(--)|(\/\*)/));
-				
-			// Join the remaining lines back together
-			return lines.join('\n');
-		})
-		.filter(statement => statement.length > 0);  // Remove empty statements
-		/*
-		const statements = dumpfile
-			.split(/;\s*[\r\n]+/)
-            .map(statement => statement.trim())
-			.filter(statement => {
-				// Remove empty statements
-				if (statement.length === 0) return false;
+		//cleanup the database
+		// we do this separately to avoid locks and better error control
+		await connection.query({ sql: 'DROP TABLE IF EXISTS `npidata2`;', timeout: 90000});
+		await connection.query({ sql: 'DROP TABLE IF EXISTS `transactions`;', timeout: 90000});
+		await connection.query({ sql: 'DROP TABLE IF EXISTS `taxonomy`;', timeout: 90000});
+		await connection.query({ sql: 'DROP TABLE IF EXISTS `speciality`;', timeout: 90000});
 
-				// Split into lines and check if there's at least one non-comment line
-				const lines = statement.split('\n')
-					.map(line => line.trim())
-					.filter(line => 
-						line.length > 0 && 
-						!line.startsWith('--') && 
-						!line.startsWith('/*') &&
-						line !== ''
-					);
-				
-				return lines.length > 0;
-            });*/
-		/*	
-		let i=0;
-		for (const statement of statements) {	
-			console.log('Completed executing statement: ', i);
-			console.log('Statement size: ', statement.length);
-			console.log('First 100 characters: ', statement.substring(0, 100));
-			i++;
-		}*/
-		
-		let i=0;
-        for (const statement of statements) {
-			try {
-				if (statement) {
-					await connection.query({
-						sql: statement + ';',
-						timeout: 90000 // 90 seconds timeout per query
-					});
-					//await connection.query(statement + ';');
-					console.log('Completed executing statement: ', i);
-					console.log('Statement size: ', statement.length);
-					console.log('First 50 characters: ', statement.substring(0, 50));
-					i++;
-				}
-			} catch (queryError) {
-				console.log('Error executing statement: ', i);
-				console.log('Statement size: ', statement.length);
-				console.log('First 50 characters: ', statement.substring(0, 50));
-				//throw queryError;
-				i++;
-				continue;
-			}
-        }
-		console.log('Total statements executed: ', i);
-		
-        // Close the connection
+		//Load data
+		await connection.query({ sql: dumpfile, timeout: 180000});
+
+       // Close the connection
         await connection.end();
 
 		//cleanup. delete the unzipped file
@@ -135,14 +77,22 @@ async function LoadData() {
 		console.log("Success. healthylinkx-db populated with data.");
 	} catch (err) {
 		console.log("Error loading datastore: ", err);
-		//if (err.message) console.log("Error message:", err.message);
-        //if (err.sql) console.log("Failed SQL:", err.sql);
 	}
 }
 
 async function DSCreate() {
-
 	try {
+		// Create an RDS client service object
+		const rdsclient = new RDSClient({});
+
+		//if the datastore already exist nothing to do
+		data = await rdsclient.send(new DescribeDBInstancesCommand({
+			DBInstanceIdentifier: 'healthylinkx-db'}));
+		if (data.DBInstances[0].DBInstanceStatus  === 'available') {
+			console.log("healthylinkx-db already exists.");
+			return;
+		}
+
 		//In order to have public access to the DB
 		//we need to create a security group (aka firewall)with an inbound rule 
 		//protocol:TCP, Port:3306, Source: Anywhere (0.0.0.0/0)
@@ -163,9 +113,6 @@ async function DSCreate() {
 		};
 		await ec2client.send( new AuthorizeSecurityGroupIngressCommand(paramsIngress));
 		console.log("Success. " + vpcSecurityGroupId + " authorized.");
-
-		// Create an RDS client service object
-		const rdsclient = new RDSClient({});
 	
 		// Create the RDS instance
 		var rdsparams = {
@@ -197,7 +144,7 @@ async function DSCreate() {
 }
 
 async function main () {
-	// await DSCreate();
+	await DSCreate();
 	await LoadData();
 }
 
