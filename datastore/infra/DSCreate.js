@@ -85,12 +85,16 @@ async function DSCreate() {
 		// Create an RDS client service object
 		const rdsclient = new RDSClient({});
 
-		//if the datastore already exist nothing to do
-		data = await rdsclient.send(new DescribeDBInstancesCommand({
-			DBInstanceIdentifier: 'healthylinkx-db'}));
-		if (data.DBInstances[0].DBInstanceStatus  === 'available') {
-			console.log("healthylinkx-db already exists.");
-			return;
+		//if the datastore already exists nothing to do
+		try {
+			data = await rdsclient.send(new DescribeDBInstancesCommand({
+				DBInstanceIdentifier: 'healthylinkx-db'}));
+			if (data.DBInstances[0].DBInstanceStatus  === 'available') {
+				console.log("healthylinkx-db already exists.");
+				return;
+			}
+		} catch (err) {
+			console.log("Datastore doesn't exist, creating one.");
 		}
 
 		//In order to have public access to the DB
